@@ -11,13 +11,22 @@ const ROLE_LABELS = {
   admin: "Administration",
 };
 
+// 1 seule route par rôle
 const ROUTE_REQUIRED_ROLE = {
-  "/": ["dg"],
-  "/chantier": ["dg"],
-  "/direction": ["direction", "dg"],
-  "/chef-chantier": ["chef", "dg"],
-  "/securite": ["securite", "dg"],
-  "/admin": ["admin", "dg"],
+  "/": ["dg"],                 // Vue DG
+  "/direction": ["direction"], // Vue Direction Travaux
+  "/chef-chantier": ["chef"],  // Vue Chef de Chantier
+  "/securite": ["securite"],   // Vue Responsable Sécurité
+  "/admin": ["admin"],         // Vue Administration
+};
+
+// Liens visibles dans la barre du haut selon le rôle
+const NAV_LINKS_BY_ROLE = {
+  dg: [{ label: "Vue DG", path: "/" }],
+  direction: [{ label: "Direction Travaux", path: "/direction" }],
+  chef: [{ label: "Chef de Chantier", path: "/chef-chantier" }],
+  securite: [{ label: "Responsable Sécurité", path: "/securite" }],
+  admin: [{ label: "Administration", path: "/admin" }],
 };
 
 function startsWithRoute(pathname, routeBase) {
@@ -55,7 +64,7 @@ export default function RoleShell({ children }) {
     router.push("/login");
   }
 
-  // 🔹 Pendant le chargement on évite les clignotements
+  // Pendant le chargement
   if (!ready) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-xs">
@@ -64,12 +73,12 @@ export default function RoleShell({ children }) {
     );
   }
 
-  // 🔹 Cas particulier : page /login → pas de barre du haut, pas de contrôle de rôle
+  // Page /login : pas de shell
   if (pathname === "/login") {
     return children;
   }
 
-  // 🔹 Calcul des droits d’accès pour la route courante
+  // Calcul des droits sur la route courante
   let accessDenied = false;
   let requiredRoles = [];
 
@@ -88,6 +97,9 @@ export default function RoleShell({ children }) {
   }
 
   const roleLabel = user ? ROLE_LABELS[user.role] || user.role : "Non connecté";
+
+  // Récupérer les liens de navigation autorisés pour ce rôle
+  const navLinks = user ? NAV_LINKS_BY_ROLE[user.role] || [] : [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
@@ -136,38 +148,17 @@ export default function RoleShell({ children }) {
           </div>
         </div>
 
-        {/* Liens rapides */}
+        {/* Liens rapides : seulement ceux autorisés pour ce rôle */}
         <nav className="mx-auto max-w-7xl px-4 pb-2 text-[11px] text-slate-400 flex flex-wrap gap-2">
-          <button
-            onClick={() => router.push("/")}
-            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
-          >
-            Vue DG
-          </button>
-          <button
-            onClick={() => router.push("/direction")}
-            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
-          >
-            Direction Travaux
-          </button>
-          <button
-            onClick={() => router.push("/chef-chantier")}
-            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
-          >
-            Chef de Chantier
-          </button>
-          <button
-            onClick={() => router.push("/securite")}
-            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
-          >
-            Responsable Sécurité
-          </button>
-          <button
-            onClick={() => router.push("/admin")}
-            className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
-          >
-            Administration
-          </button>
+          {navLinks.map((link) => (
+            <button
+              key={link.path}
+              onClick={() => router.push(link.path)}
+              className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 hover:bg-slate-800"
+            >
+              {link.label}
+            </button>
+          ))}
         </nav>
       </header>
 
@@ -179,9 +170,7 @@ export default function RoleShell({ children }) {
             <div>
               Cette vue est réservée aux rôles :{" "}
               <span className="font-semibold">
-                {requiredRoles
-                  .map((r) => ROLE_LABELS[r] || r)
-                  .join(" / ")}
+                {requiredRoles.map((r) => ROLE_LABELS[r] || r).join(" / ")}
               </span>
             </div>
           </div>
